@@ -96,7 +96,7 @@ func needToCheckType(paramType ast.Expr) bool {
 	case *ast.StructType:
 		return true
 	case *ast.InterfaceType:
-		return t.Incomplete
+		return t.Methods == nil || len(t.Methods.List) == 0 // empty interface
 	case *ast.SelectorExpr:
 		return false
 	default:
