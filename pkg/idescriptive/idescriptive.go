@@ -74,11 +74,11 @@ func (r *runner) checkMethod(pass *analysis.Pass, funcType *ast.FuncType, msg st
 	}
 }
 
+// nolint:gocyclo,gocognit
 func needToCheckType(paramType ast.Expr) bool {
 	switch t := paramType.(type) {
 	case *ast.Ident:
-		name := t.Name
-		return needToCheckBuiltin(name)
+		return needToCheckBuiltin(t.Name)
 	case *ast.StarExpr:
 		return needToCheckType(t.X)
 	case *ast.Ellipsis:
@@ -92,7 +92,7 @@ func needToCheckType(paramType ast.Expr) bool {
 	case *ast.ChanType:
 		return true
 	case *ast.FuncType:
-		return true
+		return false
 	case *ast.StructType:
 		return true
 	case *ast.InterfaceType:
@@ -105,7 +105,6 @@ func needToCheckType(paramType ast.Expr) bool {
 }
 
 func needToCheckBuiltin(name string) bool {
-	// TODO: need to add error?
 	for _, n := range []string{
 		"bool",
 		"uint8",
