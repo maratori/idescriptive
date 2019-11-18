@@ -90,7 +90,16 @@ func needToCheckType(paramType ast.Expr) bool {
 	case *ast.ParenExpr:
 		return needToCheckType(t.X)
 	case *ast.ChanType:
-		return true
+		switch t.Dir {
+		case ast.RECV: // <-chan
+			return true
+		case ast.SEND: // chan<-
+			return needToCheckType(t.Value)
+		case ast.RECV | ast.SEND:
+			return true
+		default:
+			panic(fmt.Sprintf("unknown chan direction %#v", t.Dir))
+		}
 	case *ast.FuncType:
 		return false
 	case *ast.StructType:
