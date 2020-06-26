@@ -10,7 +10,7 @@ import (
 	"github.com/maratori/idescriptive/pkg/idescriptive"
 )
 
-func TestAnalyzer_AllTypes_False(t *testing.T) {
+func TestAnalyzer_AllTypes_False(t *testing.T) { // nolint:unused // false positive
 	t.Parallel()
 
 	testdata, err := filepath.Abs("testdata/alltypesfalse")
@@ -18,7 +18,7 @@ func TestAnalyzer_AllTypes_False(t *testing.T) {
 	analysistest.Run(t, testdata, idescriptive.NewAnalyzer())
 }
 
-func TestAnalyzer_AllTypes_True(t *testing.T) {
+func TestAnalyzer_AllTypes_True(t *testing.T) { // nolint:unused // false positive
 	t.Parallel()
 
 	testdata, err := filepath.Abs("testdata/alltypestrue")
