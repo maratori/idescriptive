@@ -3,4 +3,3 @@
 *.out
 go.check.mod
 go.check.sum
-tmp/
