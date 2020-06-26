@@ -25,7 +25,7 @@ linters-settings:
     lines: 60 # default 60
     statements: 40 # default 40
   gocognit:
-    min-complexity: 10 # minimal code complexity to report, 30 by default (but we recommend 10-20)
+    min-complexity: 15 # minimal code complexity to report, 30 by default (but we recommend 10-20)
   goconst:
     min-len: 3 # default 3
     min-occurrences: 3 # default 3
