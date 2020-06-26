@@ -10,13 +10,13 @@ import (
 	"golang.org/x/tools/go/ast/inspector"
 )
 
-// NewAnalyzer returns Analyzer that reports interfaces without named arguments
+// NewAnalyzer returns Analyzer that reports interfaces without named arguments.
 func NewAnalyzer() *analysis.Analyzer {
 	runner := runner{
 		allTypes: false,
 	}
 	fs := flag.NewFlagSet("", flag.PanicOnError)
-	fs.BoolVar(&runner.allTypes, "all-types", runner.allTypes, "TBD") // TODO: add usage description
+	fs.BoolVar(&runner.allTypes, "all-types", runner.allTypes, "All parameters should be named regardless of type")
 
 	return &analysis.Analyzer{
 		Name:     "idescriptive",
@@ -27,7 +27,7 @@ func NewAnalyzer() *analysis.Analyzer {
 	}
 }
 
-// runner is necessary to encapsulate flags with logic
+// runner is necessary to encapsulate flags with logic.
 type runner struct {
 	allTypes bool
 }
@@ -74,7 +74,7 @@ func (r *runner) checkMethod(pass *analysis.Pass, funcType *ast.FuncType, msg st
 	}
 }
 
-// nolint:gocyclo,gocognit
+// nolint:gocyclo // it's ok to have huge switch
 func needToCheckType(paramType ast.Expr) bool {
 	switch t := paramType.(type) {
 	case *ast.Ident:

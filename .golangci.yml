@@ -19,6 +19,7 @@ linters-settings:
     check-exported: true # default false
   varcheck:
     exported-fields: true # default false
+
   dupl:
     threshold: 150 # default 150
   funlen:
@@ -41,8 +42,16 @@ linters-settings:
     min-complexity: 15 # default 30
   goimports:
     local-prefixes: github.com/maratori/idescriptive
+  godot:
+    check-all: true # default false
   golint:
-    min-confidence: 0.1 # default 0.8
+    min-confidence: 0 # default 0.8
+  gomnd:
+    settings:
+      mnd:
+        # the list of enabled checks, see https://github.com/tommy-muehle/go-mnd/#checks for description.
+        checks: argument,case,condition,operation,return,assign # default argument,case,condition,operation,return,assign
+        ignored-numbers: 0,1 # default 0,1
   lll:
     line-length: 120 # default 120
   maligned:
@@ -52,10 +61,20 @@ linters-settings:
     ignore-words: "" # default: ""
   nakedret:
     max-func-lines: 0 # default 30
+  nestif:
+    min-complexity: 4 # default 5
+  nolintlint:
+    allow-unused: false # default false
+    allow-leading-space: true # default true
+    allow-no-explanation: [funlen] # default []
+    require-explanation: true # default false
+    require-specific: true # default false
   prealloc:
     simple: false # default true
     range-loops: true # default true
     for-loops: true # default false
+  testpackage:
+    skip-regexp: (export|internal)_test\.go # default (export|internal)_test\.go
   unparam:
     check-exported: true # default false
   wsl:
@@ -77,9 +96,10 @@ linters:
     - staticcheck
     - structcheck
     - typecheck
-    #- unused # false positives
+    - unused
     - varcheck
     ## disabled by default
+    - asciicheck
     - bodyclose
     - dupl
     - funlen
@@ -89,19 +109,38 @@ linters:
     - goconst
     - gocritic
     - gocyclo
+    - godot
+    - godox
     - goimports
     - golint
+    - gomnd
+    - goprintffuncname
     - gosec
     - lll
     - maligned
     - misspell
     - nakedret
+    - nestif
+    - nolintlint
     - prealloc
+    - rowserrcheck
     - scopelint
+    - stylecheck
+    - testpackage
     - unconvert
     - unparam
     - whitespace
     - wsl
+    ## disabled
+    #- depguard # is not used - Go linter that checks if package imports are in a list of acceptable packages
+    #- dogsled # is not used - Checks assignments with too many blank identifiers (e.g. x, _, _, _, := f())
+    #- goerr113 # too strict
+    #- gofmt # replaced with goimports
+    #- gomodguard
+    #- interfacer # deprecated and has false positives
+
+output:
+  uniq-by-line: false # default true
 
 issues:
   max-issues-per-linter: 0
