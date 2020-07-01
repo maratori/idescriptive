@@ -44,7 +44,7 @@ func (r *runner) run(pass *analysis.Pass) (interface{}, error) {
 		}
 		for _, method := range interfaceType.Methods.List {
 			if funcType, ok := method.Type.(*ast.FuncType); ok {
-				r.checkMethod(pass, funcType, "missing input parameter name")
+				r.checkMethod(pass, funcType)
 			}
 		}
 	})
@@ -52,7 +52,7 @@ func (r *runner) run(pass *analysis.Pass) (interface{}, error) {
 	return nil, nil
 }
 
-func (r *runner) checkMethod(pass *analysis.Pass, funcType *ast.FuncType, msg string) {
+func (r *runner) checkMethod(pass *analysis.Pass, funcType *ast.FuncType) {
 	if funcType.Params == nil {
 		return
 	}
@@ -63,12 +63,12 @@ func (r *runner) checkMethod(pass *analysis.Pass, funcType *ast.FuncType, msg st
 		}
 
 		if len(param.Names) == 0 {
-			pass.Reportf(param.Pos(), msg)
+			pass.Reportf(param.Pos(), "missing incoming parameter name")
 		}
 
 		for _, name := range param.Names {
 			if name.Name == "" {
-				pass.Reportf(name.Pos(), msg)
+				pass.Reportf(name.Pos(), "missing incoming parameter name")
 			}
 		}
 	}
