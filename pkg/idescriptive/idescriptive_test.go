@@ -13,7 +13,7 @@ import (
 func TestAnalyzer_AllTypes_False(t *testing.T) { // nolint:unused // false positive
 	t.Parallel()
 
-	testdata, err := filepath.Abs("testdata/alltypesfalse")
+	testdata, err := filepath.Abs("testdata/strict_false")
 	require.NoError(t, err)
 	analysistest.Run(t, testdata, idescriptive.NewAnalyzer())
 }
@@ -21,11 +21,11 @@ func TestAnalyzer_AllTypes_False(t *testing.T) { // nolint:unused // false posit
 func TestAnalyzer_AllTypes_True(t *testing.T) { // nolint:unused // false positive
 	t.Parallel()
 
-	testdata, err := filepath.Abs("testdata/alltypestrue")
+	testdata, err := filepath.Abs("testdata/strict_true")
 	require.NoError(t, err)
 
 	analyzer := idescriptive.NewAnalyzer()
-	err = analyzer.Flags.Set("all-types", "true")
+	err = analyzer.Flags.Set("strict", "true")
 	require.NoError(t, err)
 	analysistest.Run(t, testdata, analyzer)
 }

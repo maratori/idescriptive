@@ -1,7 +1,7 @@
 # idescriptive <br> [![ci][b-ci-img]][b-ci-link] [![codecov][b-codecov-img]][b-codecov-link] [![codebeat][b-codebeat-img]][b-codebeat-link] [![Maintainability][b-maintain-img]][b-maintain-link] [![Go Report][b-goreport-img]][b-goreport-link] [![License][b-license-img]][b-license-link] [![GoDoc][b-godoc-img]][b-godoc-link]
 
 
-Linter reports interfaces without named arguments
+Linter reports obscure interfaces.
 
 
 
