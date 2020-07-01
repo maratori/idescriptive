@@ -1,4 +1,4 @@
-package alltypesfalse
+package strict_false
 
 type Empty interface{}
 

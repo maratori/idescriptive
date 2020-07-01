@@ -10,22 +10,17 @@ import (
 	"golang.org/x/tools/go/ast/inspector"
 )
 
-// NewAnalyzer returns Analyzer that reports interfaces without named arguments.
+// NewAnalyzer returns Analyzer that reports obscure interfaces.
 func NewAnalyzer() *analysis.Analyzer {
 	r := runner{
-		allTypesShouldHaveName: false,
+		strict: false,
 	}
 	fs := flag.NewFlagSet("", flag.PanicOnError)
-	fs.BoolVar(
-		&r.allTypesShouldHaveName,
-		"all-types",
-		r.allTypesShouldHaveName,
-		"All parameters should be named regardless of type",
-	)
+	fs.BoolVar(&r.strict, "strict", r.strict, "Require all parameters to have names in interface declaration")
 
 	return &analysis.Analyzer{
 		Name:     "idescriptive",
-		Doc:      "report interfaces without named arguments",
+		Doc:      "report obscure interfaces",
 		Flags:    *fs,
 		Run:      r.run,
 		Requires: []*analysis.Analyzer{inspect.Analyzer},
@@ -34,7 +29,7 @@ func NewAnalyzer() *analysis.Analyzer {
 
 // runner is necessary to encapsulate flags with logic.
 type runner struct {
-	allTypesShouldHaveName bool
+	strict bool
 }
 
 func (r *runner) run(pass *analysis.Pass) (interface{}, error) {
@@ -65,7 +60,7 @@ func (r *runner) checkMethod(pass *analysis.Pass, funcType *ast.FuncType) {
 	}
 
 	for _, param := range funcType.Params.List {
-		if !r.allTypesShouldHaveName && typeIsSelfDescribing(param.Type) {
+		if !r.strict && typeIsSelfDescribing(param.Type) {
 			continue
 		}
 

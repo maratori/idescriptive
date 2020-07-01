@@ -1,4 +1,4 @@
-package alltypesfalse
+package strict_false
 
 type BadSingleParam interface {
 	NoReturn(int)              // want `missing incoming parameter name`
