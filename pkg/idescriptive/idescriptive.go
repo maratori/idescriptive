@@ -12,24 +12,29 @@ import (
 
 // NewAnalyzer returns Analyzer that reports interfaces without named arguments.
 func NewAnalyzer() *analysis.Analyzer {
-	runner := runner{
-		allTypes: false,
+	r := runner{
+		allTypesShouldHaveName: false,
 	}
 	fs := flag.NewFlagSet("", flag.PanicOnError)
-	fs.BoolVar(&runner.allTypes, "all-types", runner.allTypes, "All parameters should be named regardless of type")
+	fs.BoolVar(
+		&r.allTypesShouldHaveName,
+		"all-types",
+		r.allTypesShouldHaveName,
+		"All parameters should be named regardless of type",
+	)
 
 	return &analysis.Analyzer{
 		Name:     "idescriptive",
 		Doc:      "report interfaces without named arguments",
 		Flags:    *fs,
-		Run:      runner.run,
+		Run:      r.run,
 		Requires: []*analysis.Analyzer{inspect.Analyzer},
 	}
 }
 
 // runner is necessary to encapsulate flags with logic.
 type runner struct {
-	allTypes bool
+	allTypesShouldHaveName bool
 }
 
 func (r *runner) run(pass *analysis.Pass) (interface{}, error) {
@@ -43,6 +48,8 @@ func (r *runner) run(pass *analysis.Pass) (interface{}, error) {
 			return
 		}
 		for _, method := range interfaceType.Methods.List {
+			// *ast.Ident - embedded interface from current package
+			// *ast.SelectorExpr - embedded interface from different package
 			if funcType, ok := method.Type.(*ast.FuncType); ok {
 				r.checkMethod(pass, funcType)
 			}
@@ -58,7 +65,7 @@ func (r *runner) checkMethod(pass *analysis.Pass, funcType *ast.FuncType) {
 	}
 
 	for _, param := range funcType.Params.List {
-		if !r.allTypes && !needToCheckType(param.Type) {
+		if !r.allTypesShouldHaveName && typeIsSelfDescribing(param.Type) {
 			continue
 		}
 
@@ -75,45 +82,45 @@ func (r *runner) checkMethod(pass *analysis.Pass, funcType *ast.FuncType) {
 }
 
 // nolint:gocyclo // it's ok to have huge switch
-func needToCheckType(paramType ast.Expr) bool {
+func typeIsSelfDescribing(paramType ast.Expr) bool {
 	switch t := paramType.(type) {
 	case *ast.Ident:
-		return needToCheckBuiltin(t.Name)
+		return !builtinTypeShouldHaveName(t.Name)
 	case *ast.StarExpr:
-		return needToCheckType(t.X)
+		return typeIsSelfDescribing(t.X)
 	case *ast.Ellipsis:
-		return needToCheckType(t.Elt)
+		return typeIsSelfDescribing(t.Elt)
 	case *ast.ArrayType:
-		return needToCheckType(t.Elt)
+		return typeIsSelfDescribing(t.Elt)
 	case *ast.MapType:
-		return needToCheckType(t.Key) || needToCheckType(t.Value)
+		return typeIsSelfDescribing(t.Key) && typeIsSelfDescribing(t.Value)
 	case *ast.ParenExpr:
-		return needToCheckType(t.X)
+		return typeIsSelfDescribing(t.X)
 	case *ast.ChanType:
 		switch t.Dir {
 		case ast.RECV: // <-chan
-			return true
+			return false
 		case ast.SEND: // chan<-
-			return needToCheckType(t.Value)
+			return typeIsSelfDescribing(t.Value)
 		case ast.RECV | ast.SEND:
-			return true
+			return false
 		default:
 			panic(fmt.Sprintf("unknown chan direction %#v", t.Dir))
 		}
 	case *ast.FuncType:
-		return false
-	case *ast.StructType:
 		return true
-	case *ast.InterfaceType:
-		return t.Methods == nil || len(t.Methods.List) == 0 // empty interface
-	case *ast.SelectorExpr:
+	case *ast.StructType:
 		return false
+	case *ast.InterfaceType:
+		return t.Methods != nil && len(t.Methods.List) > 0 // non-empty interface
+	case *ast.SelectorExpr:
+		return true
 	default:
 		panic(fmt.Sprintf("unknown type %#v", t))
 	}
 }
 
-func needToCheckBuiltin(name string) bool {
+func builtinTypeShouldHaveName(name string) bool {
 	for _, n := range []string{
 		"bool",
 		"uint8",
