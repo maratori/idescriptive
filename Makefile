@@ -35,7 +35,7 @@ check-tidy:
 # need to mount /go/pkg to provide dependencies into container
 # otherwise go will fail to download private repos from github
 RUN_LINTER_IN_DOCKER = docker run --rm                                                                                                \
-                                  --name idescriptive_lint                                                                               \
+                                  --name idescriptive_lint                                                                            \
                                   --mount type=bind,consistency=delegated,source="`go env GOPATH | cut -d : -f 1`/pkg",target=/go/pkg \
                                   --mount type=bind,consistency=delegated,source="`go env GOCACHE`",target=/root/.cache/go-build      \
                                   --mount type=bind,consistency=delegated,source="`pwd`",target=/app                                  \
