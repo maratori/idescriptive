@@ -1,7 +1,7 @@
 package strict_true
 
 type BadSingleParam interface {
-	NoReturn(int)                          // want `missing incoming parameter name`
-	SingleReturn(bool) (x int)             // want `missing incoming parameter name`
-	DoubleReturn(Empty) (y int, err error) // want `missing incoming parameter name`
+	NoReturn(int)                          // want `missing name for incoming parameter int in method NoReturn\(int\)`
+	SingleReturn(bool) (x int)             // want `missing name for incoming parameter bool in method SingleReturn\(bool\) \(x int\)`
+	DoubleReturn(Empty) (y int, err error) // want `missing name for incoming parameter Empty in method DoubleReturn\(Empty\) \(y int, err error\)`
 }

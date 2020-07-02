@@ -4,6 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"go/ast"
+	"go/token"
+	"go/types"
+	"strings"
 
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
@@ -46,7 +49,7 @@ func (r *runner) run(pass *analysis.Pass) (interface{}, error) {
 			// *ast.Ident - embedded interface from current package
 			// *ast.SelectorExpr - embedded interface from different package
 			if funcType, ok := method.Type.(*ast.FuncType); ok {
-				r.checkMethod(pass, funcType)
+				r.reportIssuesForMethod(pass, method.Names[0].Name, funcType)
 			}
 		}
 	})
@@ -54,26 +57,77 @@ func (r *runner) run(pass *analysis.Pass) (interface{}, error) {
 	return nil, nil
 }
 
-func (r *runner) checkMethod(pass *analysis.Pass, funcType *ast.FuncType) {
-	if funcType.Params == nil {
-		return
+func (r *runner) reportIssuesForMethod(pass *analysis.Pass, methodName string, funcType *ast.FuncType) {
+	var issues []issue
+
+	switch r.strict {
+	case true:
+		issues = analyseMethodStrict(funcType)
+	case false:
+		issues = analyseMethod(funcType)
+	}
+
+	for _, i := range issues {
+		pass.Reportf(i.Pos, "missing name for incoming parameter %s in method %s%s",
+			types.ExprString(i.Type),
+			methodName,
+			strings.TrimPrefix(types.ExprString(funcType), "func"),
+		)
+	}
+}
+
+type issue struct {
+	Pos  token.Pos
+	Type ast.Expr
+}
+
+func analyseMethodStrict(funcType *ast.FuncType) []issue {
+	if funcType.Params.NumFields() == 0 {
+		return nil
 	}
 
 	for _, param := range funcType.Params.List {
-		if !r.strict && typeIsSelfDescribing(param.Type) {
+		// no need to check other params because either all params have names either all not
+		return issueIfDoNotHaveName(param)
+	}
+
+	return nil
+}
+
+func analyseMethod(funcType *ast.FuncType) []issue {
+	if funcType.Params.NumFields() == 0 {
+		return nil
+	}
+
+	issues := []issue{}
+
+	for _, param := range funcType.Params.List {
+		if typeIsSelfDescribing(param.Type) {
 			continue
 		}
 
-		if len(param.Names) == 0 {
-			pass.Reportf(param.Pos(), "missing incoming parameter name")
+		issues = append(issues, issueIfDoNotHaveName(param)...)
+	}
+
+	return issues
+}
+
+func issueIfDoNotHaveName(param *ast.Field) []issue {
+	if len(param.Names) == 0 {
+		return []issue{{Pos: param.Pos(), Type: param.Type}}
+	}
+
+	for _, name := range param.Names {
+		if name == nil {
+			return []issue{{Pos: param.Pos(), Type: param.Type}} // should never happen
 		}
 
-		for _, name := range param.Names {
-			if name.Name == "" {
-				pass.Reportf(name.Pos(), "missing incoming parameter name")
-			}
+		if name.Name == "" {
+			return []issue{{Pos: name.Pos(), Type: param.Type}} // should never happen
 		}
 	}
+
+	return nil
 }
 
 // nolint:gocyclo // it's ok to have huge switch
