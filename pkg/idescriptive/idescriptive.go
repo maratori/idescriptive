@@ -64,7 +64,7 @@ func (r *runner) reportIssuesForMethod(pass *analysis.Pass, methodName string, f
 	case true:
 		issues = analyseMethodStrict(funcType)
 	case false:
-		issues = analyseMethod(funcType)
+		issues = analyseMethod(pass.TypesInfo, funcType)
 	}
 
 	for _, i := range issues {
@@ -94,7 +94,7 @@ func analyseMethodStrict(funcType *ast.FuncType) []issue {
 	return nil
 }
 
-func analyseMethod(funcType *ast.FuncType) []issue {
+func analyseMethod(info *types.Info, funcType *ast.FuncType) []issue {
 	if funcType.Params.NumFields() == 0 {
 		return nil
 	}
@@ -102,7 +102,7 @@ func analyseMethod(funcType *ast.FuncType) []issue {
 	issues := []issue{}
 
 	for _, param := range funcType.Params.List {
-		if typeIsSelfDescribing(param.Type) {
+		if typeIsSelfDescribing(info.TypeOf(param.Type)) {
 			continue
 		}
 
@@ -131,70 +131,38 @@ func issueIfDoNotHaveName(param *ast.Field) []issue {
 }
 
 // nolint:gocyclo // it's ok to have huge switch
-func typeIsSelfDescribing(paramType ast.Expr) bool {
+func typeIsSelfDescribing(paramType types.Type) bool {
 	switch t := paramType.(type) {
-	case *ast.Ident:
-		return !builtinTypeShouldHaveName(t.Name)
-	case *ast.StarExpr:
-		return typeIsSelfDescribing(t.X)
-	case *ast.Ellipsis:
-		return typeIsSelfDescribing(t.Elt)
-	case *ast.ArrayType:
-		return typeIsSelfDescribing(t.Elt)
-	case *ast.MapType:
-		return typeIsSelfDescribing(t.Key) && typeIsSelfDescribing(t.Value)
-	case *ast.ParenExpr:
-		return typeIsSelfDescribing(t.X)
-	case *ast.ChanType:
-		switch t.Dir {
-		case ast.RECV: // <-chan
-			return false
-		case ast.SEND: // chan<-
-			return typeIsSelfDescribing(t.Value)
-		case ast.RECV | ast.SEND:
+	case *types.Basic:
+		return false
+	case *types.Pointer:
+		return typeIsSelfDescribing(t.Elem())
+	case *types.Array:
+		return typeIsSelfDescribing(t.Elem())
+	case *types.Slice:
+		return typeIsSelfDescribing(t.Elem())
+	case *types.Map:
+		return typeIsSelfDescribing(t.Key()) && typeIsSelfDescribing(t.Elem())
+	case *types.Chan:
+		switch t.Dir() {
+		case types.SendOnly: // chan<-
+			return typeIsSelfDescribing(t.Elem())
+		case types.RecvOnly, types.SendRecv: // <-chan | chan
 			return false
 		default:
-			panic(fmt.Sprintf("unknown chan direction %#v", t.Dir))
+			panic(fmt.Sprintf("unknown chan direction %#v", t.Dir()))
 		}
-	case *ast.FuncType:
-		return true
-	case *ast.StructType:
+	case *types.Struct:
 		return false
-	case *ast.InterfaceType:
-		return t.Methods != nil && len(t.Methods.List) > 0 // non-empty interface
-	case *ast.SelectorExpr:
+	case *types.Signature: // func
 		return true
+	case *types.Named: // error as well
+		return true
+	case *types.Interface:
+		return !t.Empty()
+	case *types.Tuple:
+		panic("tuple is not possible here")
 	default:
 		panic(fmt.Sprintf("unknown type %#v", t))
 	}
-}
-
-func builtinTypeShouldHaveName(name string) bool {
-	for _, n := range []string{
-		"bool",
-		"uint8",
-		"uint16",
-		"uint32",
-		"uint64",
-		"int8",
-		"int16",
-		"int32",
-		"int64",
-		"float32",
-		"float64",
-		"complex64",
-		"complex128",
-		"string",
-		"int",
-		"uint",
-		"uintptr",
-		"byte",
-		"rune",
-	} {
-		if name == n {
-			return true
-		}
-	}
-
-	return false
 }
