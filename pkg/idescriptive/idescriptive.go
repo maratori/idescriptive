@@ -153,12 +153,16 @@ func typeIsSelfDescribing(paramType types.Type) bool {
 			panic(fmt.Sprintf("unknown chan direction %#v", t.Dir()))
 		}
 	case *types.Struct:
-		return false
-	case *types.Signature: // func
+		// Empty struct{} is ok because it's just a flag (used in channels and maps).
+		// Non-empty struct is ok because it's self-describing.
 		return true
+	case *types.Signature: // func
+		return true // may be false?
 	case *types.Named: // error as well
+		// If it is named it's self-describing
 		return true
 	case *types.Interface:
+		// If interface has method(s) it's self-describing.
 		return !t.Empty()
 	case *types.Tuple:
 		panic("tuple is not possible here")
