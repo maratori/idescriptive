@@ -95,7 +95,8 @@ func analyseMethodStrict(funcType *ast.FuncType) []issue {
 }
 
 func analyseMethod(info *types.Info, funcType *ast.FuncType) []issue {
-	if funcType.Params.NumFields() == 0 {
+	if funcType.Params.NumFields() <= 1 {
+		// Mostly single parameter of a method is evident
 		return nil
 	}
 
