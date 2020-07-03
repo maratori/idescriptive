@@ -116,8 +116,8 @@ func analyseMethod(info *types.Info, funcType *ast.FuncType) []issue {
 			switch seen.count {
 			case 0:
 				seen.first = issueIfDoNotHaveName(param)
-				issues = append(issues, seen.first...)
 			case 1:
+				issues = append(issues, seen.first...)
 			}
 
 			selfDescribingTypes[tStr] = Seen{
