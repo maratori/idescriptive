@@ -100,10 +100,31 @@ func analyseMethod(info *types.Info, funcType *ast.FuncType) []issue {
 		return nil
 	}
 
+	type Seen struct {
+		first []issue
+		count int
+	}
+
 	issues := []issue{}
+	selfDescribingTypes := map[string]Seen{}
 
 	for _, param := range funcType.Params.List {
 		if typeIsSelfDescribing(info, param.Type) {
+			tStr := types.ExprString(param.Type)
+			seen := selfDescribingTypes[tStr]
+
+			switch seen.count {
+			case 0:
+				seen.first = issueIfDoNotHaveName(param)
+				issues = append(issues, seen.first...)
+			case 1:
+			}
+
+			selfDescribingTypes[tStr] = Seen{
+				first: seen.first,
+				count: seen.count + 1,
+			}
+
 			continue
 		}
 
