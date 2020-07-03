@@ -103,7 +103,7 @@ func analyseMethod(info *types.Info, funcType *ast.FuncType) []issue {
 	issues := []issue{}
 
 	for _, param := range funcType.Params.List {
-		if typeIsSelfDescribing(info.TypeOf(param.Type)) {
+		if typeIsSelfDescribing(info, param.Type) {
 			continue
 		}
 
@@ -131,43 +131,60 @@ func issueIfDoNotHaveName(param *ast.Field) []issue {
 	return nil
 }
 
-// nolint:gocyclo // it's ok to have huge switch
-func typeIsSelfDescribing(paramType types.Type) bool {
+// nolint:funlen,gocyclo // it's ok to have huge switch
+func typeIsSelfDescribing(info *types.Info, paramType ast.Expr) bool {
 	switch t := paramType.(type) {
-	case *types.Basic:
-		return false
-	case *types.Pointer:
-		return typeIsSelfDescribing(t.Elem())
-	case *types.Array:
-		return typeIsSelfDescribing(t.Elem())
-	case *types.Slice:
-		return typeIsSelfDescribing(t.Elem())
-	case *types.Map:
-		return typeIsSelfDescribing(t.Key()) && typeIsSelfDescribing(t.Elem())
-	case *types.Chan:
-		switch t.Dir() {
-		case types.SendOnly: // chan<-
-			return typeIsSelfDescribing(t.Elem())
-		case types.RecvOnly, types.SendRecv: // <-chan | chan
+	case *ast.Ident:
+		switch o := info.ObjectOf(t).(type) {
+		case *types.TypeName:
+			switch o.Type().(type) {
+			case *types.Named:
+				return true
+			default:
+				return o.IsAlias()
+			}
+		case *types.Builtin, *types.Const, *types.Func, *types.Label, *types.Nil, *types.PkgName, *types.Var:
+			panic(fmt.Sprintf("unexpected object %T %#v", o, o)) // should never happen
+		default:
+			panic(fmt.Sprintf("unknown object %T %#v", o, o))
+		}
+	case *ast.StarExpr:
+		return typeIsSelfDescribing(info, t.X)
+	case *ast.Ellipsis:
+		return typeIsSelfDescribing(info, t.Elt)
+	case *ast.ArrayType:
+		return typeIsSelfDescribing(info, t.Elt)
+	case *ast.MapType:
+		return typeIsSelfDescribing(info, t.Key) && typeIsSelfDescribing(info, t.Value)
+	case *ast.ParenExpr:
+		return typeIsSelfDescribing(info, t.X)
+	case *ast.ChanType:
+		switch t.Dir {
+		case ast.RECV: // <-chan
+			return false
+		case ast.SEND: // chan<-
+			return typeIsSelfDescribing(info, t.Value)
+		case ast.RECV | ast.SEND:
 			return false
 		default:
-			panic(fmt.Sprintf("unknown chan direction %#v", t.Dir()))
+			panic(fmt.Sprintf("unknown chan direction %#v", t.Dir))
 		}
-	case *types.Struct:
+	case *ast.StructType:
 		// Empty struct{} is ok because it's just a flag (used in channels and maps).
 		// Non-empty struct is ok because it's self-describing.
 		return true
-	case *types.Signature: // func
+	case *ast.FuncType:
 		return true // may be false?
-	case *types.Named: // error as well
-		// If it is named it's self-describing
-		return true
-	case *types.Interface:
+	case *ast.SelectorExpr: // http.Response
+		// It has a name that describes what is it.
+		return true // should unsafe.Pointer be exception?
+	case *ast.InterfaceType:
 		// If interface has method(s) it's self-describing.
-		return !t.Empty()
-	case *types.Tuple:
-		panic("tuple is not possible here")
+		return t.Methods.NumFields() > 0 // non-empty interface
+	case *ast.BadExpr, *ast.BasicLit, *ast.BinaryExpr, *ast.CallExpr, *ast.CompositeLit, *ast.FuncLit,
+		*ast.IndexExpr, *ast.KeyValueExpr, *ast.SliceExpr, *ast.TypeAssertExpr, *ast.UnaryExpr:
+		panic(fmt.Sprintf("unexpected type %T %#v", t, t)) // should never happen
 	default:
-		panic(fmt.Sprintf("unknown type %#v", t))
+		panic(fmt.Sprintf("unknown type %T %#v", t, t))
 	}
 }
