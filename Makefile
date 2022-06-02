@@ -19,7 +19,7 @@ tidy:
 .PHONY: tidy
 
 update-deps:
-	go get -u ./...
+	go get -u -t ./...
 	go mod tidy
 .PHONY: update-deps
 
