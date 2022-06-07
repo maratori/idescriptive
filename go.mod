@@ -3,7 +3,7 @@ module github.com/maratori/idescriptive
 go 1.17
 
 require (
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.7.2
 	golang.org/x/tools v0.1.10
 )
 
