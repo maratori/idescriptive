@@ -54,7 +54,7 @@ func (r *runner) run(pass *analysis.Pass) (interface{}, error) {
 		}
 	})
 
-	return nil, nil
+	return nil, nil // nolint:nilnil // linter doesn't return a result
 }
 
 func (r *runner) reportIssuesForMethod(pass *analysis.Pass, methodName string, funcType *ast.FuncType) {
@@ -152,7 +152,6 @@ func issueIfDoNotHaveName(param *ast.Field) []issue {
 	return nil
 }
 
-// nolint:funlen,gocyclo // it's ok to have huge switch
 func typeIsSelfDescribing(info *types.Info, paramType ast.Expr) bool {
 	switch t := paramType.(type) {
 	case *ast.Ident:

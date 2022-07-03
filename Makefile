@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := test
 
-LINTER_VERSION = v1.27.0
+LINTER_VERSION = v1.46.2
 lint:
 	go mod download
 	$(RUN_LINTER_IN_DOCKER)
