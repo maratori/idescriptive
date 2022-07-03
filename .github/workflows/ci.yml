@@ -1,38 +1,54 @@
 name: ci
 on:
+  workflow_dispatch:
+    inputs:
+      debug_ssh:
+        description: "Enable SSH debug with tmate, see https://github.com/marketplace/actions/debugging-with-tmate"
+        required: false
+        type: boolean
+        default: false
+  pull_request:
   push:
-    tags:
-      - v*
     branches:
       - master
-  pull_request:
+  schedule:
+    - cron: "0 0 * * 1" # Each Monday
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   lint:
-    name: lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: golangci/golangci-lint-action@v1
-        with:
-          version: v1.27
-  test:
-    name: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
           go-version: "1.17"
-      - run: make test-cover
-      - uses: codecov/codecov-action@v1
+      - uses: golangci/golangci-lint-action@v3
         with:
-          fail_ci_if_error: true
+          version: "v1.46.2"
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: "1.17"
+      - name: Debug with tmate SSH if enabled
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_ssh }}
+        uses: mxschmitt/action-tmate@v3
+      - run: make test-cover
+      - uses: codecov/codecov-action@v3
+
   check-tidy:
     name: go mod tidy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
           go-version: "1.17"
       - run: make check-tidy
