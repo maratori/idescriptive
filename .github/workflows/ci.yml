@@ -41,7 +41,9 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_ssh }}
         uses: mxschmitt/action-tmate@v3
       - run: make test-cover
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   check-tidy:
     name: go mod tidy
